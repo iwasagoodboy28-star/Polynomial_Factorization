@@ -1,0 +1,65 @@
+def binnum(q): #2進展開のリスト(展開を右から読む)
+    list=[]
+    while q>=1:
+        list.append(q%2)
+        q=q//2
+    return list
+
+def fasterpowermod(a,q,b):
+    #print("2shin",binnum(q))
+    list=[a.mod(b)] #a0(x),...,ak(x)の格納
+    #print(list)
+    for i in range(len(binnum(q))-1): #a0(x),...,ak(x)の計算と追加
+        #print('a is ',a)
+        a=(a^2).mod(b)
+        list.append(a)
+    #print('finallist',list)
+    ans=1
+    for j in range(len(list)): #「二進展開の位が1のものの積」の余りを考える。
+        if binnum(q)[j]==1:
+           #print('hi!',binnum(q)[j],j)
+           ans*=list[j].mod(b)
+    return ans.mod(b)
+
+#改良版
+def fasterpowermod1(a,q,b): 
+    ans=1
+    while q>=1:
+        if q%2==1:　#展開の位の数が1なら積を計算する
+            #print('ans',ans)
+            ans*=a.mod(b)
+        a=(a^2).mod(b) #2乗の計算
+        q=q//2
+    return ans.mod(b)
+
+def DDF(f,p):
+    list=[]
+    h=x
+    g=f
+    k=0
+    while(g!=1):
+        k=k+1
+        h=fasterpowermod(h,p,g) #fasterpowermod1(h,p,g)でもok
+        gk=gcd(h-x,g)
+        list.append(gk)
+        g=g//gk
+    return list
+
+p=3
+R.<x> = PolynomialRing(GF(p))
+
+#高速べき乗剰余計算
+a=x^51227+1
+q=12
+b=x^2+2
+print('faster',fasterpowermod(a,q,b))
+#print('ans',(a^q).mod(b))
+
+#DDFの例
+f=x^9+4*x^8+10*x^7+21*x^6+31*x^5+40*x^4+38*x^3+27*x^2+16*x+4
+print('DDF',DDF(f,p))
+g=x^15-4*x^14+6*x^13+x^12-20*x^11+36*x^10-26*x^9-12*x^8+48*x^7-50*x^6+20*x^5+12*x^4-23*x^3+16*x^2-6*x+1
+print('DDF',DDF(g,p))
+
+
+
