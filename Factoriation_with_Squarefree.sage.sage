@@ -1,0 +1,436 @@
+def squarefree(f):    #fの無平方分解
+    g=f.gcd(f.diff(x)) #fの微分とのgcd
+    k=1 
+    list=[]
+    s=f//g #f/gだと多項式環の商体として認識されるみたい
+    #print('s is',s)
+    while(s.degree()!=0):
+        h=g.gcd(s) #1度計算して代入した方が効率が良い
+        #print('h is',h)
+        F=s//h
+        #print('F is',F)
+        g=g//h
+        s=h
+        list.append([F,k]) #重複度が同じ因子の積をリストに加える
+        k=k+1
+    return list
+#関数が想定する環の入力を自分で調整する
+
+def fasterpowermod1(a,q,b): 
+    ans=1
+    while q>=1:
+        if q%2==1:#展開の位の数が1なら積を計算する
+            ans*=a.mod(b)
+        a=(a^2).mod(b) #2乗の計算
+        q=q//2
+    return ans.mod(b)
+
+def DDF(f,p): #f:F_p上の多項式
+    list=[]
+    h=x
+    g=f
+    k=0
+    while(g!=1):
+        #k=k+1
+        h=fasterpowermod1(h,p,g) 
+        gk=gcd(h-x,g)
+        list.append(gk)
+        g=g//gk
+    return list  #Fp上の多項式返却
+
+
+def random(deg,p): #Fp上のランダム多項式deg(h)<degを返す
+    K.<x> = PolynomialRing(GF(p))
+    while True:
+        h_tmp=0
+        deg_h=randint(1,deg) #次数指定
+        for i in range(deg_h):
+            h_tmp+=randint(0,p-1)*x^i
+        if h_tmp!=h_tmp.constant_coefficient(): #hが定数
+            return K(h_tmp)  #Fp上に変換して返却
+
+def FindNonTrivialFactor(f,d,p):#Fp上の多項式f
+    q=(p^d-1)//2
+    while(1):
+        while(1):
+            h=random(f.degree(),p) #ランダム多項式
+            if gcd(f,h)==1: #fと互いに素か判定
+                break
+        g=gcd(h,f)
+        if g!=1:
+            return g,f//g
+        f1=gcd(fasterpowermod1(h,q,f)-1,f) #h^q-1 mod y とfとのgcd ユークリッドの定理
+        if f1!=1 and f1!=f:
+            return f1,f//f1 #Fp上の多項式のリストを返却
+
+
+def EDF(f,d,p):#Fp上の多項式f
+    SF=[]
+    F=[f]
+    while(len(SF)<(f.degree()//d)):
+        g=F[0]#先頭要素
+        F.remove(g) #使用した多項式を削除
+        if f.is_irreducible()==False:
+            g1,g2=FindNonTrivialFactor(g,d,p)
+            if  g1.degree()!=d:
+                F.append(g1)
+            else:
+                SF.append(g1)
+            if  g2.degree()!=d:
+                F.append(g2)
+            else:
+                SF.append(g2)
+        else:
+            SF.append(f)
+    return SF #Fp上の多項式のリストを返却
+
+def FactorFp(f,p):#Fp上の多項式f
+    D=DDF(f,p)
+    #print(D)
+    F=[]
+    c=0
+    for g in D:
+        c+=1
+        #print(g)
+        if g!=1: #要検討
+            #print(c)
+            G=EDF(g,c,p)
+            #print(G)
+            F=F+G
+    return F #Fp上の集合
+
+
+#ヘンゼル構成
+def HenselLifting(f,g,h,k,p): #fはモニック,整数上のf
+    R.<x>=PolynomialRing(ZZ)
+    #print("f =",parent(f))
+    #print("g =",parent(g))
+    #print("h =",parent(h))
+    f, g , h = R(f), R(g), R(h)
+    
+    K.<x> = PolynomialRing(GF(p))
+    
+    gcd,u,v = xgcd(K(g),K(h))
+    #print("u_type_before =", parent(u))
+    #print("v_type_before =", parent(v))
+    #print("gcd =",gcd,"and","u =", u,"and","v =",v)
+    if gcd != 1:
+        u = u / gcd
+        v = v / gcd
+    else:
+        u, v = R(u), R(v)
+    #print("u_type_after =", parent(u))
+    #print("u =",u)
+    #print("v =",v)
+    #print()
+    temp = 1 #pのべき乗用
+    #print("f =",parent(f))
+    #print("g =",parent(g))
+    #print("h =",parent(h))
+    for i in range(1,k+1):
+        temp *= p
+        delta = K((f - g * h) / temp)
+        #print("delta_type =", parent(delta))
+        #print("delta =", delta)
+        #delta_v = delta * v
+        #print("delta_v =",delta_v)
+        #print("delta_v =", parent(delta_v))
+        #print("delta*v =",K(delta) * v)
+        g = g + temp * R((delta * v).mod(g))
+        
+        #delta_u = delta * u
+        h = h + temp * R((delta * u).mod(h))
+        
+        #print("i =",i)
+        #print("mod =",temp)
+        #print("g =",g)
+        #print("h =",h)
+        #print()
+    K.<x> = PolynomialRing(Zmod(p^k))
+    result = [K(g),K(h)] #結果を入れるリスト Z/p^k上に変換して格納
+    
+    return result
+
+
+def MultiHenselLifting(f,F,k,p):#f:Z上のモニックかつ無平方/F:f_p上の既約因子の集合
+    r = len(F)
+    if r == 1:
+        return [f]
+    
+    G = []
+    s = ceil(r/2)
+    F_0 = []
+    F_1 = []
+    g0 = 1
+    g1 = 1
+    for i in range(r):
+        if i <= s - 1 :
+            F_0.append(F[i])
+        else:
+            F_1.append(F[i])
+            
+    for i in range(len(F_0)):
+        g0 *= F_0[i]
+    
+    for j in range(len(F_1)):
+        g1 *= F_1[j]
+    #print("henzel_g0 =",parent(g0))
+    #print("henzel_g1 =",parent(g1))
+    #print("henzel_p =",p)
+    G_hat = HenselLifting(f,g0,g1,k,p)
+    
+    G0 = MultiHenselLifting(G_hat[0],F_0,k,p)
+    G1 = MultiHenselLifting(G_hat[1],F_1,k,p)#返却はZ/p^k上の多項式のリスト
+    
+    G = G0 + G1
+    
+    #print("G =",parent(G[0]))
+    G_goal = []
+    
+    for g in G:
+        G_goal.append(g)
+    
+    #print("G_goal =",parent(G_goal[0]))
+    return G_goal #Z/p^k上の多項式のリストを返却(HenselLLiftingから自動的にそうなる)
+
+
+def conv(f,q): #引き戻しを行う関数 fを一度整数環上の関数とみなす,q:剰余 入力はどの環でもOK
+    R.<x>=PolynomialRing(ZZ)
+    f1=R(f)
+    g = 0 #引き戻しをした関数
+    #print(length)
+    for i in range(f1.degree()+1):
+        temp = f1.monomial_coefficient(x^i)
+        if temp >= q/2:
+            temp = temp - q
+        g += temp * x^(i)
+    return g #Z上の多項式として返却
+
+def choice(List, number):
+    if number == 1:
+        temp = []
+        for f in List:
+            temp.append([f])
+        return temp
+    
+    Goal = []
+    
+    for i in range(number-1,len(List)): #起点を動かすループ
+        sublist = List[:i] #起点より前にあるリストを取り出す
+        result = choice(sublist,number-1)
+        for j in result:
+            j.append(List[i]) #起点部分を追加する
+        Goal += result
+    
+    return Goal
+
+
+def factor_on_Z(f):
+    R.<x>=PolynomialRing(ZZ)
+    m = f.degree()
+    #print("m =",m)
+    B = 2^(m+1) * f.norm(2) 
+    #print("f.norm(1) =",f.norm(1))
+    #print("f.norm(2) =",f.norm(2))
+    #print("B =",B)
+    value = f.resultant(f.diff())
+
+    p = 3 #奇素数
+    #print("value =",value)
+
+    while True:
+        if value % p != 0 :
+            break
+        p = next_prime(p)
+    #print("p =",p)
+    
+    K.<x> = PolynomialRing(GF(p))
+    
+    k = 0
+    while True:
+        if p^(k-1) < B < p^k:
+            k+=1
+            break
+        k += 1
+        
+        
+    #print("p^(k-1) < B < p^k =",p^(k-1) ,B , p^k)
+    #print("k =",k)
+
+    T.<x> = PolynomialRing(Zmod(p^k))
+
+    F = []
+    #print("f =",parent(f))
+    f0 = K(f) #f mod p
+
+    H0 = FactorFp(f0,p)
+    #print("H0=",H0)
+    #print(parent(H0[0]))
+
+    H = MultiHenselLifting(f, H0, k, p) #modp^k上の多項式を返却
+    #print("H =",H)
+    #print(len(H))
+    #print("H_type =",parent(H[0]))
+    Level = 1
+    while(2*Level <=len(H)):
+        #print("in while H is ",H)
+        #print("level =",Level)
+        G = choice(H,Level)#Gを取り直す
+       
+        #print("G =",G)
+        #print()
+        
+        for g in G: #gもリスト
+                flag=0
+                print("いくつとるか：",Level)
+                H_copy = H.copy()
+                print("因子を作る材料",g)
+                g1, g2 = 1, 1
+                for h in g: #hはmod p^k上の多項式
+                    g1 *= h 
+                #print("g1_type =",parent(g1))
+                #print("引き戻す前g1 =",g1)
+                g1 = conv(g1,p^k)  #mod p^kで引き戻し.デフオルトで整数上の多項式を返却
+                #print("g1_type = p^k",parent(g1))
+                print("これが因子の候補：",g1)
+                #print("g1.norm(1) =",g1.norm(1))
+                #print()
+                for i in range(len(g)):
+                    H_copy.remove(g[i])
+                
+                print("余因子の材料",H_copy)
+                #print("h_copy =",parent(H_copy[0]))
+                for h in H_copy:
+                    #print("h_h_copy",h)
+                    g2 *= h
+                #print("引き戻す前g2_change =",g2)
+                #print("g2_type =",parent(g2))
+                g2 = conv(g2,p^k)
+                print("余因子の候補：",g2)
+                #print("g2.norm(1) =",g2.norm(1))
+                #print("g2_type =",parent(g2))
+                #print('')
+                print("g1.norm(1) * g2.norm(1) < B :",g1.norm(1) * g2.norm(1) )
+                print("本当に因子になっているか？",g1.norm(1) * g2.norm(1) < B)
+                #print("Level=",Level)
+                print('')
+                
+                if g1.norm(1) * g2.norm(1) < B:
+                    F.append(g1)
+                    H = H_copy.copy()#Hを更新
+                    #print("succeeeded H_after =",H)
+                    #print("真の因子のリスト",F)
+                    #print("H,lev",H,Level)
+                    
+                    if len(H)==Level:
+                        F.append(g2)
+                        return F
+                    flag=1
+                    break
+        if flag==1:
+            continue
+                
+        Level+=1
+    temp = 1
+    for g in H:
+        temp *= g
+    temp = conv(R(temp),p^k)
+    F.append(temp)
+    return F
+
+
+
+R.<x> = PolynomialRing(ZZ)
+
+#DDFの例
+#f=x^9+4*x^8+10*x^7+21*x^6+31*x^5+40*x^4+38*x^3+27*x^2+16*x+4
+#print('DDF',DDF(f,3))
+#print("DDF_type =",parent(DDF(f,3)[0]))
+#Ans = factor_on_Z(f)
+#print("Ans =",Ans)
+#print("true_ans =",factor(f))
+#print()
+#print('EDF',EDF(x^3+2*x+1,3,3))
+#print(FactorFp(f,3))
+#V.<x> = PolynomialRing(GF(3))
+#print(factor(V(f)))
+#print(FactorFp(V(f)))
+
+#A = FactorFp(f)
+
+
+#G = MultiHenselLifting(f,A,1)
+
+#print(G)
+
+#f = (x+3) * (x^2 + 4) *(x^2+2*x+3)
+#print('DDF',DDF(f,5))
+#print(FactorFp(f,5))
+#print(FactorFp(f,5))
+#print(factor(f))
+#V.<x> = PolynomialRing(GF(5))
+#print(factor(V(f)))
+
+#f = x^8 - 40 * x^6 + 352*x^4 - 960*x^2 +576
+
+#f=x^9+2*x+1
+
+f=(x^27+36*x^24+1467*x^21-102030*x^18+306603*x^15+26810748*x^12+225547473*x^9+747939726*x^6
++1090843020*x^3+667627624)^5*(x^6+5*x^3-14)^2*(x^2-144)^3
+
+#f = 18*x^10 + 216*x^8 - 24*x^7 + 648*x^6 - 288*x^5 + 8*x^4 - 864*x^3 + 96*x^2 +288
+
+#f = 9*x^10 + 108*x^8 - 12*x^7 + 324*x^6 - 144*x^5 + 4*x^4 - 432*x^3 + 48*x^2 +144
+
+#f = x^5 +18*x^3 - 2*x^2 -12
+
+#f = x^5 + 7*x^4 + 15*x^3 + 13*x^2 + 24*x +36 #平方因子を持つ
+
+#f = x^16 - 136 * x^14 + 6476 * x^12 - 141912 * x^10 + 1513334 * x^8 - 7453176 * x^6 + 13950764 * x^4 - 5596840 * x^2 + 46225
+
+
+#f = (x^3+2) * (x^2+3) * (x+5) * (x+7) * (x+11) * (x+13)
+
+#f = x^5 + 9*x^4 + 6*x^3 - 3*x^2 -27 * x -18
+#f=(x^4+1)*(x+1)*(x+5)*(x^3+2)*(x^8+1)*(x^12+3)#これのとき動作がやばい
+#f= x^9 -x
+#f=(x^4+7)^3*(x^2+16)*(x^3+x+1)*(x-7)
+#f = 3*x^5 +18*x^3 - 2*x^2 -12
+#f = f.monic()
+
+#f=(x^4+7)*(x^2+16)*(x^3+x+1)*(x-7)
+#f=x^10-x
+#f=(x-8)^3*x*(x-2)^2
+#f=(x^2+1)^2*(x-9)^3*(x-1)
+#f=x^10+21
+
+print("f =",f)
+list=squarefree(f)
+print("無平方分解：",list)
+print('')
+#以降表示用の設定
+ListForAns=[]
+for g in list: #無平方分解したのちの各多項式gに対して
+    if g[0].degree()!=0: 
+        print("因数分解する多項式：",g)
+        lst=factor_on_Z(g[0]) #定数でない多項式に対して因数分解
+        for g1 in lst: #因子と指数をセットにする
+            ListForAns.append([g1,g[1]])
+print("f= ",end='')
+count=0
+for Factor in ListForAns:
+    if count!=0:
+        print(' * ',end='')
+    if Factor[0]==x:
+        print(Factor[0],end='')
+    else:
+        print('(',Factor[0],')',end='')
+    if Factor[1]!=1: #指数の表示
+        print('^',Factor[1],end='') 
+    count+=1
+
+print()
+print("true_ans =",factor(f))
+#print("Ans_type =",parent(Ans[0]))
+
+
