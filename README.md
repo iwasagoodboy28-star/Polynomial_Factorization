@@ -35,7 +35,11 @@ Next, we transform factors in $F_{p}[x]$ into factors in $(F_{p^q})[x]$ by using
 After step4, we can get factors in $(F_{p^q})[x]$. However, though they are factors in $(F_{p^q})[x]$, they can be fake in $Z[x]$.
 So we have to find true factors in $Z[x]$ by searching combinations of factors in $(F_{p^q)}[x]$. Then we can finish decomposition on $Z[x]$. 
 
+## How to use?
 Overall program with squarefree is written in Factoriation_with_Squarefree.sage . It is written in sage. For example, you can use it on [SageMathCell](https://sagecell.sagemath.org/) 
+
+## Remark
+All these programs are for monic polynomial.
 
 ## Bibliography
 Kazuhiro Yokoyama (2022). Polynomials and computer algebra. 

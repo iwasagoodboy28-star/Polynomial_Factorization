@@ -339,44 +339,15 @@ def factor_on_Z(f):
     return F
 
 
-
-R.<x> = PolynomialRing(ZZ)
-
-#DDFの例
-#f=x^9+4*x^8+10*x^7+21*x^6+31*x^5+40*x^4+38*x^3+27*x^2+16*x+4
-#print('DDF',DDF(f,3))
-#print("DDF_type =",parent(DDF(f,3)[0]))
-#Ans = factor_on_Z(f)
-#print("Ans =",Ans)
-#print("true_ans =",factor(f))
-#print()
-#print('EDF',EDF(x^3+2*x+1,3,3))
-#print(FactorFp(f,3))
-#V.<x> = PolynomialRing(GF(3))
-#print(factor(V(f)))
-#print(FactorFp(V(f)))
-
-#A = FactorFp(f)
-
-
-#G = MultiHenselLifting(f,A,1)
-
-#print(G)
-
-#f = (x+3) * (x^2 + 4) *(x^2+2*x+3)
-#print('DDF',DDF(f,5))
-#print(FactorFp(f,5))
-#print(FactorFp(f,5))
-#print(factor(f))
-#V.<x> = PolynomialRing(GF(5))
-#print(factor(V(f)))
-
-#f = x^8 - 40 * x^6 + 352*x^4 - 960*x^2 +576
-
-#f=x^9+2*x+1
+R.<x> = PolynomialRing(ZZ)  #declare R = Z[x]
 
 f=(x^27+36*x^24+1467*x^21-102030*x^18+306603*x^15+26810748*x^12+225547473*x^9+747939726*x^6
 +1090843020*x^3+667627624)^5*(x^6+5*x^3-14)^2*(x^2-144)^3
+
+#Following are examples.
+#f = x^8 - 40 * x^6 + 352*x^4 - 960*x^2 +576
+
+#f=x^9+2*x+1
 
 #f = 18*x^10 + 216*x^8 - 24*x^7 + 648*x^6 - 288*x^5 + 8*x^4 - 864*x^3 + 96*x^2 +288
 
@@ -388,15 +359,12 @@ f=(x^27+36*x^24+1467*x^21-102030*x^18+306603*x^15+26810748*x^12+225547473*x^9+74
 
 #f = x^16 - 136 * x^14 + 6476 * x^12 - 141912 * x^10 + 1513334 * x^8 - 7453176 * x^6 + 13950764 * x^4 - 5596840 * x^2 + 46225
 
-
 #f = (x^3+2) * (x^2+3) * (x+5) * (x+7) * (x+11) * (x+13)
 
 #f = x^5 + 9*x^4 + 6*x^3 - 3*x^2 -27 * x -18
-#f=(x^4+1)*(x+1)*(x+5)*(x^3+2)*(x^8+1)*(x^12+3)#これのとき動作がやばい
+#f=(x^4+1)*(x+1)*(x+5)*(x^3+2)*(x^8+1)*(x^12+3)
 #f= x^9 -x
 #f=(x^4+7)^3*(x^2+16)*(x^3+x+1)*(x-7)
-#f = 3*x^5 +18*x^3 - 2*x^2 -12
-#f = f.monic()
 
 #f=(x^4+7)*(x^2+16)*(x^3+x+1)*(x-7)
 #f=x^10-x
@@ -430,7 +398,6 @@ for Factor in ListForAns:
     count+=1
 
 print()
-print("true_ans =",factor(f))
-#print("Ans_type =",parent(Ans[0]))
+print("true_ans =",factor(f))#comparing default function.
 
 
